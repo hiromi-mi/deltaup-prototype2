@@ -4,33 +4,31 @@ class Label2:
 class Node:
     def __init__(self):
         pass
-    pass
 
 class Problem:
     def __init__(self):
-        old_root = Node()
-        new_node = Node()
-        self.queue.append(new_node)
         self.queue = []
+        self.orig_root = Node()
+        self.new_node = Node()
+        self.queue.append(self.new_node)
+        self.orig_trace = []
 
         while (len(self.queue) > 0):
             node = self.queue[-1]
-            try_solve(node)
-            pass
+            self.try_solve(node)
 
     def try_solve(self, new_node):
         front = new_node.edges[-1]
         if front.in_edge.assignment:
             # delete front
             new_node.edges.pop()
-            pass
 
         orig_node = self.find_corresponding_orig_node(new_node)
         if not orig_node:
             print("Cannot find model node")
             return
 
-        self.node_extend(orig_node)
+        self.extend_nodes(orig_node, self.orig_trace)
         # skip_committted_labels()
         if len(orig_node.edges) == 0:
             print("Cannot find model node due to no edges")
@@ -47,7 +45,7 @@ class Problem:
 
         new_label_info = new_match.in_edge
         orig_label_info = orig_match.in_edge
-        m_index = new_label_info.label.index;
+        m_index = new_label_info.label.index
         if m_index != "noindex":
             print("Error: Cannot Unassigned Model Label")
             return
@@ -57,6 +55,9 @@ class Problem:
         # find matches within new match
         self.add_to_queue(new_match)
         self.add_to_queue(new_node)
+
+    def add_to_queue(self, new_node):
+        self.queue.append(new_node)
 
     def assign_and_extend(self, new_label_info, orig_label_info):
         self.assignone(new_label_info, orig_label_info)
@@ -70,13 +71,13 @@ class Problem:
 
     def find_corresponding_orig_node(self, node):
         if not node.prev:
-            return orig_root
+            return self.orig_root
         new_parent = node.prev
         orig_parent = self.find_corresponding_orig_node(new_parent)
         if not orig_parent:
             return orig_parent
 
-        self.extend_node(orig_parent, orig_trace)
+        self.extend_nodes(orig_parent, self.orig_trace)
 
         new_label_info = node.in_edge
         orig_label_info = new_label_info.assignment
@@ -97,5 +98,4 @@ class Problem:
                 label_info = trace[index]
                 slot = node.edges[node.edges.index(label_info)]
                 pass
-
 
