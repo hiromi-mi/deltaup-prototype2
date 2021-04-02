@@ -1,5 +1,24 @@
+class AdjustmentAll:
+    def __init__(self):
+        # {Label*, LabelInfo}
+        self.label_infos = {}
+        self.old_abs32 = []
+        self.new_rel32 = []
+
+    # make_label_info + reference_label
+    #def make_label_infos(self, label, position):
+    def reference_label(self, trace, is_old, label):
+        slot = self.label_infos[label]
+        if not slot.label:
+            slot.label = label
+            #slot.is_old = is_old
+
+        slot.positions_.append(position)
+        return slot
+
 class Label2:
-    pass
+    def __init__(self):
+        self.positions_ = []
 
 class Node:
     def __init__(self):
@@ -86,6 +105,25 @@ class Problem:
 
 
     def extend_assignment(self, new_label_info, orig_label_info):
+        # 前後のAddressを比較して, その old_rva と new_rva が一致しているかどうかを判定
+        old_rva_base = old_info.label.rva;
+        new_rva_base = new_info.label.rva;
+
+        new_info_next = new_info.next_addr
+        old_info_next = old_info.next_addr
+
+        while (new_info_next and old_info_next):
+            if old_info_next.assignment:
+                break
+
+            # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
+            old_rva = old_info_next->next_addr
+            new_rva = new_info_next->next_addr
+
+            if old_rva - old_rva_base != new_rva - new_rva_base:
+        pass
+
+    def extend_sequence(self):
         pass
 
     def extend_nodes(self, node, trace):
