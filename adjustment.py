@@ -123,8 +123,49 @@ class Problem:
             if old_rva - old_rva_base != new_rva - new_rva_base:
         pass
 
-    def extend_sequence(self):
-        pass
+    def extend_sequence(self, p_pos_start, m_pos_start):
+        p_pos = p_pos_start + 1
+        m_pos = m_pos_start + 1
+
+        while (p_pos < len(self.p_trace) and m_pos < len(self.m_trace)):
+            p_info = p_trace[p_pos]
+            m_info = m_trace[m_pos]
+
+            if (p_info->assignment && m_info->assignment):
+                if p_info->label->index == m_info->label->index:
+                    break
+                p_pos += 1
+                m_pos += 1
+                continue
+            if p_info->refs != m_info->refs:
+                break
+            assignone(p_info, m_info)
+            p_pos += 1
+            m_pos += 1
+        return p_pos - p_pos_start
+
+    def extend_sequence_backwards(self, p_pos_start, m_pos_start):
+        if p_pos_start == 0 or m_pos_start == 0:
+            return 0
+
+        p_pos = p_pos_start - 1
+        m_pos = m_pos_start - 1
+
+        while (p_pos > 0 and m_pos > 0):
+            p_info = p_trace[p_pos]
+            m_info = m_trace[m_pos]
+            if (p_info->assignment && m_info->assignment):
+                if p_info->label->index == m_info->label->index:
+                    break
+                p_pos -= 1
+                m_pos -= 1
+                continue
+            if p_info->refs != m_info->refs:
+                break
+            assignone(p_info, m_info)
+            p_pos -= 1
+            m_pos -= 1
+        return p_pos - p_pos_start
 
     def extend_nodes(self, node, trace):
         if len(node.edges) > 0 or len(node.places) == 0:
