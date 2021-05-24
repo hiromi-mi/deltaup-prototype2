@@ -6,6 +6,17 @@ class Disassembler:
     def __init__(self, fname):
         self.fname = fname
 
+    def is_valid_target_rva(rva):
+        pass
+    def file_offset_to_rva(offset):
+        # すべての ELF Section をみてなおす
+        pass
+
+    def rva_to_file_offset(rvav):
+        # RVA と File Offset を見てなおす
+        pass
+
+    
     def disassemble(self):
         f = open(self.fname, "rb")
         elffile = ELFFile(f)
