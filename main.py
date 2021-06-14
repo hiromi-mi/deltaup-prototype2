@@ -7,7 +7,7 @@ parser.add_argument('new_file', type=str)
 
 args = parser.parse_args()
 
-print(args.old_file)
-print(args.new_file)
 x = disassembler.Disassembler(args.old_file)
 y = disassembler.Disassembler(args.new_file)
+x.disassemble()
+y.disassemble()
