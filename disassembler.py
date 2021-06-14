@@ -19,12 +19,12 @@ class Addresses:
                 if data[p+1] != 0x8A and data[p+1] != 0x8B: 
                     rel32 = data[p+2:p+6]
                     # not JPE / JPO
-            else if ((data[p] == 0xFF and (data[p+1] in [0x15, 0x25])) or data[p] in (0x89, 0x8B, 0x8D) and (data[p+1] & 0xC7 == 0x05):
+            elif ((data[p] == 0xFF and (data[p+1] in [0x15, 0x25])) or data[p] in (0x89, 0x8B, 0x8D) and (data[p+1] & 0xC7 == 0x05)):
                 rel32 = data[p+2:p+6]
                 is_rip_relative = True
         
         if (p + 7 <= end_ptr):
-            if (data[p] & 0xF2) == 0x40 or data[p] == 0x66) and (p[1] in [0x89, 0x8B, 0x8D]) and (p[2] & 0xC7 == 0x05):
+            if (data[p] & 0xF2) == 0x40 or (data[p] & 0xF2 == 0x66) and (p[1] in [0x89, 0x8B, 0x8D]) and (p[2] & 0xC7 == 0x05):
                 rel32 = data[p+3:p+7]
                 is_rip_relative = True
         
