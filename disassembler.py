@@ -83,7 +83,8 @@ class Disassembler:
             start_offset = section_header.sh_offset
             end_offset = start_offset + section_header.sh_size - 5 + 1
 
-    def parse_progbits():
+    def parse_progbits(self):
+        # TODO
         emit_origin(origin)
         next_relocation = section_end
         #if (current_abs_offset != end_abs_offset and next_relocation > current
@@ -105,26 +106,28 @@ class Disassembler:
         abs_offsets = []
         abs32_locations_ = []
 
-        for sym in symtable.get_symbols():
+        for sym in symtable.iter_symbols():
             f.seek(sym['st_value'])
             code = f.read(sym['st_size'])
 
             md = Cs(CS_ARCH_X86, CS_MODE_64)
             # modr/m の部分など個別に取り出せるようにする
             md.detail = True
-            instrs = list(filter(lambda x: x.mnemonic in ["call", "jmp"], md.disasm(maincode, 0)))
+           # instrs = list(filter(lambda x: x.mnemonic in ["call", "jmp"], md.disasm(maincode, 0)))
            #for i in md.disasm(maincode, 0):
            #    print("0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
 
-            instrs_all.append(instrs)
+            # instrs_all.append(instrs)
             # rvvs_to_file_offsets
+        for section in elffile.iter_sections():
+            header = section.header.sh_type
             # 各セクションヘッダを見つつ
-            if section.section_type == SHT_REL:
+            if header == 'SHT_REL':
                 addresses = Addresses()
                 self._treat_rel32(0, 0)
-                pass
-            if section.section_type == SHT_PROGBITS:
+                continue
+            if header == 'SHT_PROGBITS':
                 self.parse_progbits()
-                pass
+                continue
             
-            self.receptor.emitted_bytes(md.len())
+            receptor.emit_bytes(section.data())
