@@ -25,12 +25,14 @@ class Node:
         pass
 
 class Problem:
-    def __init__(self):
+    def __init__(self, receptor_old, receptor_new):
         self.queue = []
         self.orig_root = Node()
         self.new_node = Node()
         self.queue.append(self.new_node)
         self.orig_trace = []
+        self.receptor_old = receptor_old
+        self.receptor_new = receptor_new
 
         while (len(self.queue) > 0):
             node = self.queue[-1]

@@ -95,8 +95,7 @@ class Disassembler:
         f = open(self.fname, "rb")
         self.parse_file(f, receptor)
 
-
-        return instrs_all
+        return receptor
 
     def parse_file(self, f, receptor):
         elffile = ELFFile(f)
