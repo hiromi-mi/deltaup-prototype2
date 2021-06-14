@@ -3,7 +3,7 @@ import elftools.elf.sections as sections
 from capstone import *
 
 class Receptor:
-    def __init__():
+    def __init__(self):
         self.program = []
         self.emitted_bytes = []
         self.rel32s = []
@@ -47,7 +47,7 @@ class Addresses:
     def _treat_rel32(self, rel32, adjust_pointer_to_rva):
         if not rel32:
             return None
-        
+
         #  TODO adjust_pointer_to_rva
         #rel32_rva = rel32 - adjust_pointer_to_rva
         # is there an abs32 reloc, overlapping the candidate?
@@ -87,18 +87,19 @@ class Disassembler:
         #if (current_abs_offset != end_abs_offset and next_relocation > current
     
     def disassemble(self):
-        f = open(self.fname, "rb")
-        #elffile = ELFFile(f)
-        #symtable = elffile.get_section_by_name('.symtab')
         receptor = Receptor()
 
         instrs_all = []
+        f = open(self.fname, "rb")
         self.parse_file(f, receptor)
+
 
         return instrs_all
 
-    def parse_file(self, program, receptor):
-        self.program = program
+    def parse_file(self, f, receptor):
+        elffile = ELFFile(f)
+        symtable = elffile.get_section_by_name('.symtab')
+        self.program = f
         file_offset = 0
         abs_offsets = []
         abs32_locations_ = []
@@ -118,8 +119,11 @@ class Disassembler:
             # rvvs_to_file_offsets
             # 各セクションヘッダを見つつ
             if section.section_type == SHT_REL:
+                addresses = Addresses()
                 self._treat_rel32(0, 0)
                 pass
             if section.section_type == SHT_PROGBITS:
                 self.parse_progbits()
                 pass
+            
+            self.receptor.emitted_bytes(md.len())
