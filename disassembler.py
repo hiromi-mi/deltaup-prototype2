@@ -2,6 +2,20 @@ from elftools.elf.elffile import ELFFile
 import elftools.elf.sections as sections
 from capstone import *
 
+class Receptor:
+    def __init__():
+        self.program = []
+        self.emitted_bytes = []
+        self.rel32s = []
+        self.abs32s = []
+
+    def emit_rel32(self, label):
+        self.rel32s.append(label)
+    def emit_abs32(self, abs32):
+        self.abs32s.append(abs32)
+    def emit_bytes(self, program):
+        self.emitted_bytes.append(program)
+
 class Addresses:
     data = b"" # data
     def __init__(self, data):
@@ -74,10 +88,21 @@ class Disassembler:
     
     def disassemble(self):
         f = open(self.fname, "rb")
-        elffile = ELFFile(f)
-        symtable = elffile.get_section_by_name('.symtab')
+        #elffile = ELFFile(f)
+        #symtable = elffile.get_section_by_name('.symtab')
+        receptor = Receptor()
 
         instrs_all = []
+        self.parse_file(f, receptor)
+
+        return instrs_all
+
+    def parse_file(self, program, receptor):
+        self.program = program
+        file_offset = 0
+        abs_offsets = []
+        abs32_locations_ = []
+
         for sym in symtable.get_symbols():
             f.seek(sym['st_value'])
             code = f.read(sym['st_size'])
@@ -86,23 +111,15 @@ class Disassembler:
             # modr/m の部分など個別に取り出せるようにする
             md.detail = True
             instrs = list(filter(lambda x: x.mnemonic in ["call", "jmp"], md.disasm(maincode, 0)))
-            #for i in md.disasm(maincode, 0):
-            #    print("0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
+           #for i in md.disasm(maincode, 0):
+           #    print("0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
 
             instrs_all.append(instrs)
-
-        return instrs_all
-
-    def parse_file(self, program, receptor):
-        file_offset = 0
-        abs_offsets = []
-        abs32_locations_ = []
-
-        # rvvs_to_file_offsets
-        # 各セクションヘッダを見つつ
-        if section.section_type == SHT_REL:
-            self._treat_rel32(0, 0)
-            pass
-        if section.section_type == SHT_PROGBITS:
-            self.parse_progbits()
-            pass
+            # rvvs_to_file_offsets
+            # 各セクションヘッダを見つつ
+            if section.section_type == SHT_REL:
+                self._treat_rel32(0, 0)
+                pass
+            if section.section_type == SHT_PROGBITS:
+                self.parse_progbits()
+                pass
