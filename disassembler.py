@@ -56,8 +56,10 @@ class Addresses:
     def get_rel32(self):
         p = 0 # start_offset
         while p < end_pointer:
+            addresses = Addresses()
+            addresses._get_jmp_call(p, 100)
+            # TODO
             pass
-    pass
 
 class Disassembler:
     def __init__(self, fname):
