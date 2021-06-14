@@ -14,4 +14,6 @@ x.disassemble()
 y.disassemble()
 
 problem = adjustment.Problem()
-problem.output()
+
+with open("out.patch") as f:
+    pass

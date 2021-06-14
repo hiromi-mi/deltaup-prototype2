@@ -93,7 +93,7 @@ class Disassembler:
 
         return instrs_all
 
-    def parse_file(program, receptor):
+    def parse_file(self, program, receptor):
         file_offset = 0
         abs_offsets = []
         abs32_locations_ = []
@@ -101,6 +101,8 @@ class Disassembler:
         # rvvs_to_file_offsets
         # 各セクションヘッダを見つつ
         if section.section_type == SHT_REL:
+            self._treat_rel32(0, 0)
             pass
         if section.section_type == SHT_PROGBITS:
+            self.parse_progbits()
             pass
