@@ -117,11 +117,11 @@ class Problem:
                 break
 
             # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
-            old_rva = old_info_next->next_addr
-            new_rva = new_info_next->next_addr
+            old_rva = old_info_next.next_addr
+            new_rva = new_info_next.next_addr
 
             if old_rva - old_rva_base != new_rva - new_rva_base:
-        pass
+                pass
 
     def extend_sequence(self, p_pos_start, m_pos_start):
         p_pos = p_pos_start + 1
@@ -131,13 +131,13 @@ class Problem:
             p_info = p_trace[p_pos]
             m_info = m_trace[m_pos]
 
-            if (p_info->assignment && m_info->assignment):
-                if p_info->label->index == m_info->label->index:
+            if (p_info.assignment and m_info.assignment):
+                if p_info.label.index == m_info.label.index:
                     break
                 p_pos += 1
                 m_pos += 1
                 continue
-            if p_info->refs != m_info->refs:
+            if p_info.refs != m_info.refs:
                 break
             assignone(p_info, m_info)
             p_pos += 1
@@ -154,13 +154,13 @@ class Problem:
         while (p_pos > 0 and m_pos > 0):
             p_info = p_trace[p_pos]
             m_info = m_trace[m_pos]
-            if (p_info->assignment && m_info->assignment):
-                if p_info->label->index == m_info->label->index:
+            if (p_info.assignment and m_info.assignment):
+                if p_info.label.index == m_info.label.index:
                     break
                 p_pos -= 1
                 m_pos -= 1
                 continue
-            if p_info->refs != m_info->refs:
+            if p_info.refs != m_info.refs:
                 break
             assignone(p_info, m_info)
             p_pos -= 1

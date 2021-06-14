@@ -1,5 +1,6 @@
 import argparse
 import disassembler
+import adjustment
 
 parser = argparse.ArgumentParser('Updater')
 parser.add_argument('old_file', type=str)
@@ -11,3 +12,6 @@ x = disassembler.Disassembler(args.old_file)
 y = disassembler.Disassembler(args.new_file)
 x.disassemble()
 y.disassemble()
+
+problem = adjustment.Problem()
+problem.output()
