@@ -1,6 +1,6 @@
 from elftools.elf.elffile import ELFFile
 import elftools.elf.sections as sections
-from capstone import *
+#from capstone import *
 
 class Receptor:
     def __init__(self):
@@ -25,21 +25,21 @@ class Addresses:
         rel32 = None
         is_rip_relative = False
         if (p + 5 <= end_ptr):
-            if data[p] == 0xE8 or data[p] == 0xE9:
-                rel32 = data[p+1:p+5] # TODO
+            if self.data[p] == 0xE8 or self.data[p] == 0xE9:
+                rel32 = self.data[p+1:p+5]
         
         if (p + 6 <= end_ptr):
-            if data[p] == 0x0F and (data[p+1] & 0xF0) == 0x80:
-                if data[p+1] != 0x8A and data[p+1] != 0x8B: 
-                    rel32 = data[p+2:p+6]
+            if self.data[p] == 0x0F and (self.data[p+1] & 0xF0) == 0x80:
+                if self.data[p+1] != 0x8A and self.data[p+1] != 0x8B: 
+                    rel32 = self.data[p+2:p+6]
                     # not JPE / JPO
-            elif ((data[p] == 0xFF and (data[p+1] in [0x15, 0x25])) or data[p] in (0x89, 0x8B, 0x8D) and (data[p+1] & 0xC7 == 0x05)):
-                rel32 = data[p+2:p+6]
+            elif ((self.data[p] == 0xFF and (self.data[p+1] in [0x15, 0x25])) or self.data[p] in (0x89, 0x8B, 0x8D) and (self.data[p+1] & 0xC7 == 0x05)):
+                rel32 = self.data[p+2:p+6]
                 is_rip_relative = True
         
         if (p + 7 <= end_ptr):
-            if (data[p] & 0xF2) == 0x40 or (data[p] & 0xF2 == 0x66) and (p[1] in [0x89, 0x8B, 0x8D]) and (p[2] & 0xC7 == 0x05):
-                rel32 = data[p+3:p+7]
+            if (self.data[p] & 0xF2) == 0x40 or (self.data[p] & 0xF2 == 0x66) and (p[1] in [0x89, 0x8B, 0x8D]) and (p[2] & 0xC7 == 0x05):
+                rel32 = self.data[p+3:p+7]
                 is_rip_relative = True
         
         return rel32
@@ -66,13 +66,28 @@ class Disassembler:
         self.fname = fname
 
     def is_valid_target_rva(rva):
-        pass
+        if rva == "unassigned":
+            return False
+        
+        # read of headers
+        return False
+
     def file_offset_to_rva(offset):
         # すべての ELF Section をみてなおす
+        # section内部に入っているときは sh_addr + Offset - section_begin
+        for x in sections:
+            section_header = SectionHeader(section_id)
+            section_begin = section_header.sh_offset
+            section_end = section_header.sh_size
+            if (offset >= section_begin and offset < section_end):
+                return section_header.sh_addr + offset - section_begin
         pass
 
-    def rva_to_file_offset(rvav):
+    def rva_to_file_offset(rvas):
         # RVA と File Offset を見てなおす
+        for x in sections:
+            section_header = SectionHeader(section_id)
+            return section_header.sh_offset + rva - section_begin
         pass
 
     def check_section(rva):
