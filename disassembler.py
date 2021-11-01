@@ -28,15 +28,22 @@ class Addresses:
         rel32 = None
         is_rip_relative = False
         if (p + 5 <= end_ptr):
+            # jmp rel32 : 0xE8
+            # call rel32: 0xE9
             if self.data[p] == 0xE8 or self.data[p] == 0xE9:
                 rel32 = self.data[p+1:p+5]
 
         if (p + 6 <= end_ptr):
+            # jcc long form 0x0Ff
             if self.data[p] == 0x0F and (self.data[p+1] & 0xF0) == 0x80:
                 if self.data[p+1] != 0x8A and self.data[p+1] != 0x8B:
                     rel32 = self.data[p+2:p+6]
                     # not JPE / JPO
-            elif ((self.data[p] == 0xFF and (self.data[p+1] in [0x15, 0x25])) or self.data[p] in (0x89, 0x8B, 0x8D) and (self.data[p+1] & 0xC7 == 0x05)):
+
+            # === x64 only ===
+            # ff 15: call qword ptr
+            # ff 25: jmp qword ptr
+            elif ((self.data[p] == 0xFF and (self.data[p+1] in (0x15, 0x25))) or self.data[p] in (0x89, 0x8B, 0x8D) and (self.data[p+1] & 0xC7 == 0x05)):
                 rel32 = self.data[p+2:p+6]
                 is_rip_relative = True
 
@@ -47,17 +54,8 @@ class Addresses:
 
         return rel32
 
-    def getabs32(self):
-        for section in x.iter_sections():
-            section_header = section.SectionHeader()
-            start_offset = section_header.sh_offset
-            if section_header.sh_type != 'SHT_REL':
-                continue
 
-            self.abs32.append(section)
-
-
-    def _treat_rel32(self, rel32):
+    def treat_rel32(self, rel32):
         if not rel32:
             return None
 
@@ -70,15 +68,10 @@ class Addresses:
         p = 0 # start_offset
         end_pointer = 0
         while p < end_pointer:
-            addresses = addresses([])
-            addresses._get_jmp_call(p, 100)
-            # todo
+            self._get_jmp_call(p, 100)
             pass
 
 class Disassembler:
-    def getreceptor(self):
-        return self.receptor
-
     def __init__(self, fname):
         self.fname = fname
         receptor = Receptor()
@@ -90,10 +83,10 @@ class Disassembler:
 
     def is_valid_target_rva(self, rva):
         if rva == "unassigned":
-            return false
+            return False
 
         # read of headers
-        return false
+        return False
 
     def file_offset_to_rva(self, offset):
         # すべての elf section をみてなおす
@@ -102,7 +95,7 @@ class Disassembler:
             x = ELFFile(f)
 
             for section in x.iter_sections():
-                section_header = section.SectionHeader()
+                section_header = section.header
                 section_begin = section_header.sh_offset
                 section_end = section_header.sh_size
                 if (offset >= section_begin and offset < section_end):
@@ -114,7 +107,7 @@ class Disassembler:
             x = ELFFile(f)
 
             for section in x.iter_sections():
-                section_header = section.SectionHeader()
+                section_header = section.header
                 section_begin = section_header.sh_offset
                 section_end = section_header.sh_size
                 return section_header.sh_offset + rva - section_begin
@@ -126,7 +119,7 @@ class Disassembler:
             x = ELFFile(f)
 
             for section in x.iter_sections():
-                section_header = section.SectionHeader()
+                section_header = section.header
                 start_offset = section_header.sh_offset
                 end_offset = start_offset + section_header.sh_size - 5 + 1
 
@@ -140,10 +133,31 @@ class Disassembler:
 
         #return receptor
 
+    def getabs32(self, f):
+        for section in self.elfprogram.iter_sections():
+            section_header = section.header
+            start_offset = section_header.sh_offset
+            if section_header.sh_type not in ('SHT_REL', 'SHT_RELA'):
+                continue
+
+            for reloc in section.iter_relocations():
+                # RELOCS
+                print(reloc.entry)
+
+                if reloc.entry.r_info_type != 8:
+                    continue
+                rva = reloc.entry.r_offset
+                self.receptor.emit_abs32(rva)
+
+
     def parse_file(self, f, receptor):
+
         elffile = ELFFile(f)
         symtable = elffile.get_section_by_name('.symtab')
         self.program = f
+        self.elfprogram = elffile
+        self.getabs32(f)
+
         file_offset = 0
         abs_offsets = []
         abs32_locations_ = []
@@ -165,9 +179,8 @@ class Disassembler:
             header = section.header.sh_type
             # 各セクションヘッダを見つつ
             if header == 'SHT_REL':
-                # TODO
                 addresses = Addresses(code)
-                addresses._treat_rel32(0)
+                addresses.treat_rel32(0)
                 continue
             if header == 'SHT_PROGBITS':
                 self.parse_progbits()

@@ -9,8 +9,9 @@ def setup():
 def test():
     #disassembler.parse_file
     disasembler2 = disassembler.Disassembler("../thirdparty/elf-32-high-bss")
-    testabs32(disasembler2)
+    testabs32(disasembler2, 0)
     d = disassembler.Disassembler("file1")
+    testabs32(d, 3)
     # disassembler.rel32s
     # disassembler.abs32s
     # TODO なにがrel32なの？
@@ -20,9 +21,11 @@ def test():
 
     testrel32(d)
 
-def testabs32(d):
-    if len(d.receptor.abs32s) != 4:
-        print("Error abs32")
+def testabs32(d, cnt):
+    if len(d.receptor.abs32s) != cnt:
+        print(f"Error abs32 {d.receptor.abs32s}")
+    else:
+        print(f"abs32 OK {d.receptor.abs32s}")
 
 """
 Test rel32
