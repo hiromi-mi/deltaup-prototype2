@@ -1,6 +1,6 @@
-from elftools.elf.elffile import ELFFile
-import elftools.elf.sections as sections
+from elftools.elf.elffile import ELFFile, sections
 from capstone import *
+from typing import *
 
 class Receptor:
     def __init__(self):
@@ -44,63 +44,75 @@ class Addresses:
 
         return rel32
 
+    def getabs32(self):
+        for section in sections:
+            section_header = section.SectionHeader()
+            start_offset = section_header.sh_offset
+            if section_header.sh_type != 'SHT_REL':
+                continue
+
+            self.abs32.append(section)
+
+
     def _treat_rel32(self, rel32):
         if not rel32:
-            return None
+            return none
 
-        #  TODO adjust_pointer_to_rva
+        #  todo adjust_pointer_to_rva
         #rel32_rva = rel32 - adjust_pointer_to_rva
         # is there an abs32 reloc, overlapping the candidate?
         return rel32
 
     def get_rel32(self):
         p = 0 # start_offset
+        end_pointer = 0
         while p < end_pointer:
-            addresses = Addresses()
+            addresses = addresses([])
             addresses._get_jmp_call(p, 100)
-            # TODO
+            # todo
             pass
 
-class Disassembler:
+class disassembler:
     def __init__(self, fname):
         self.fname = fname
 
     def is_valid_target_rva(self, rva):
         if rva == "unassigned":
-            return False
+            return false
 
         # read of headers
-        return False
+        return false
 
     def file_offset_to_rva(self, offset):
-        # すべての ELF Section をみてなおす
-        # section内部に入っているときは sh_addr + Offset - section_begin
-        for x in sections:
-            section_header = sections.SectionHeader(section_id)
+        # すべての elf section をみてなおす
+        # section内部に入っているときは sh_addr + offset - section_begin
+        for section in sections:
+            section_header = section.sectionheader()
             section_begin = section_header.sh_offset
             section_end = section_header.sh_size
             if (offset >= section_begin and offset < section_end):
                 return section_header.sh_addr + offset - section_begin
         pass
 
-    def rva_to_file_offset(rvas):
-        # RVA と File Offset を見てなおす
-        for x in sections:
-            section_header = sections.SectionHeader(section_id)
+    def rva_to_file_offset(rva):
+        # rva と file offset を見てなおす
+        for section in sections:
+            secti
+            section_begin = section_header.sh_offset
             return section_header.sh_offset + rva - section_begin
         pass
 
     def check_section(rva):
-        file_offset = rva_to_file_offset(rva)
+        file_offset = self.rva_to_file_offset(rva)
         # TODO sections
-        for x in sections:
-            section_header = sections.SectionHeader(section_id)
+        for section in sections:
+            section_header = section.SectionHeader()
             start_offset = section_header.sh_offset
             end_offset = start_offset + section_header.sh_size - 5 + 1
 
     def parse_progbits(self):
         # TODO
-        emit_origin(origin)
+        self.emit_origin(origin)
         next_relocation = section_end
         #if (current_abs_offset != end_abs_offset and next_relocation > current
 
