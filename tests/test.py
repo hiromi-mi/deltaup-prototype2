@@ -8,7 +8,9 @@ def setup():
 
 def test():
     #disassembler.parse_file
-    disasembler = disassembler.Disassembler("tests/file1")
+    disasembler2 = disassembler.Disassembler("../thirdparty/elf-32-high-bss")
+    testabs32(disasembler2)
+    d = disassembler.Disassembler("file1")
     # disassembler.rel32s
     # disassembler.abs32s
     # TODO なにがrel32なの？
@@ -16,19 +18,17 @@ def test():
     #     115d:       e8 d7 ff ff ff          call   1139 <subroutine>
     #
 
-    testrel32(disassembler)
-    disasembler2 = disassembler.Disassembler("thirdparty/elf-32-high-bss")
-    testabs32(disasembler2)
+    testrel32(d)
 
-def testabs32(disassembler):
-    if len(disassembler.abs32s) != 4:
+def testabs32(d):
+    if len(d.receptor.abs32s) != 4:
         print("Error abs32")
 
 """
 Test rel32
 """
-def testrel32(disassembler):
-    if "1139" in disassembler.rel32s:
+def testrel32(d):
+    if "1139" in d.receptor.rel32s:
         return -1
     pass
 

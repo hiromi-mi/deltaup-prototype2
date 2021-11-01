@@ -1,4 +1,4 @@
-from elftools.elf.elffile import ELFFile, sections
+from elftools.elf.elffile import ELFFile
 from capstone import *
 from typing import *
 
@@ -7,10 +7,13 @@ class Receptor:
         self.program = []
         self.emitted_bytes = []
         self.rel32s = []
+        self.origin = 0
         self.abs32s = []
 
     def emit_rel32(self, label):
         self.rel32s.append(label)
+    def emit_origin(self, origin):
+        self.origin = origin
     def emit_abs32(self, abs32):
         self.abs32s.append(abs32)
     def emit_bytes(self, program):
@@ -45,7 +48,7 @@ class Addresses:
         return rel32
 
     def getabs32(self):
-        for section in sections:
+        for section in x.iter_sections():
             section_header = section.SectionHeader()
             start_offset = section_header.sh_offset
             if section_header.sh_type != 'SHT_REL':
@@ -56,7 +59,7 @@ class Addresses:
 
     def _treat_rel32(self, rel32):
         if not rel32:
-            return none
+            return None
 
         #  todo adjust_pointer_to_rva
         #rel32_rva = rel32 - adjust_pointer_to_rva
@@ -72,9 +75,18 @@ class Addresses:
             # todo
             pass
 
-class disassembler:
+class Disassembler:
+    def getreceptor(self):
+        return self.receptor
+
     def __init__(self, fname):
         self.fname = fname
+        receptor = Receptor()
+        self.receptor = receptor
+
+        instrs_all = []
+        f = open(self.fname, "rb")
+        self.parse_file(f, receptor)
 
     def is_valid_target_rva(self, rva):
         if rva == "unassigned":
@@ -86,44 +98,47 @@ class disassembler:
     def file_offset_to_rva(self, offset):
         # すべての elf section をみてなおす
         # section内部に入っているときは sh_addr + offset - section_begin
-        for section in sections:
-            section_header = section.sectionheader()
-            section_begin = section_header.sh_offset
-            section_end = section_header.sh_size
-            if (offset >= section_begin and offset < section_end):
-                return section_header.sh_addr + offset - section_begin
-        pass
+        with open(self.fname) as f:
+            x = ELFFile(f)
 
-    def rva_to_file_offset(rva):
+            for section in x.iter_sections():
+                section_header = section.SectionHeader()
+                section_begin = section_header.sh_offset
+                section_end = section_header.sh_size
+                if (offset >= section_begin and offset < section_end):
+                    return section_header.sh_addr + offset - section_begin
+
+    def rva_to_file_offset(self, rva):
         # rva と file offset を見てなおす
-        for section in sections:
-            secti
-            section_begin = section_header.sh_offset
-            return section_header.sh_offset + rva - section_begin
-        pass
+        with open(self.fname) as f:
+            x = ELFFile(f)
 
-    def check_section(rva):
+            for section in x.iter_sections():
+                section_header = section.SectionHeader()
+                section_begin = section_header.sh_offset
+                section_end = section_header.sh_size
+                return section_header.sh_offset + rva - section_begin
+
+    def check_section(self, rva):
         file_offset = self.rva_to_file_offset(rva)
         # TODO sections
-        for section in sections:
-            section_header = section.SectionHeader()
-            start_offset = section_header.sh_offset
-            end_offset = start_offset + section_header.sh_size - 5 + 1
+        with open(self.fname) as f:
+            x = ELFFile(f)
+
+            for section in x.iter_sections():
+                section_header = section.SectionHeader()
+                start_offset = section_header.sh_offset
+                end_offset = start_offset + section_header.sh_size - 5 + 1
 
     def parse_progbits(self):
         # TODO
-        self.emit_origin(origin)
-        next_relocation = section_end
+        self.receptor.emit_origin(0)
+        #next_relocation = section_end
         #if (current_abs_offset != end_abs_offset and next_relocation > current
+        pass
 
-    def disassemble(self):
-        receptor = Receptor()
 
-        instrs_all = []
-        f = open(self.fname, "rb")
-        self.parse_file(f, receptor)
-
-        return receptor
+        #return receptor
 
     def parse_file(self, f, receptor):
         elffile = ELFFile(f)
@@ -152,7 +167,7 @@ class disassembler:
             if header == 'SHT_REL':
                 # TODO
                 addresses = Addresses(code)
-                self._treat_rel32(0, 0)
+                addresses._treat_rel32(0)
                 continue
             if header == 'SHT_PROGBITS':
                 self.parse_progbits()
