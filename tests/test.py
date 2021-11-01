@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append("..")
 import disassembler
 
 def setup():
@@ -5,7 +8,7 @@ def setup():
 
 def test():
     #disassembler.parse_file
-    disasembler = disassembler.Disassembler("file1")
+    disasembler = disassembler.Disassembler("tests/file1")
     # disassembler.rel32s
     # disassembler.abs32s
     # TODO なにがrel32なの？
@@ -14,6 +17,12 @@ def test():
     #
 
     testrel32(disassembler)
+    disasembler2 = disassembler.Disassembler("thirdparty/elf-32-high-bss")
+    testabs32(disasembler2)
+
+def testabs32(disassembler):
+    if len(disassembler.abs32s) != 4:
+        print("Error abs32")
 
 """
 Test rel32
