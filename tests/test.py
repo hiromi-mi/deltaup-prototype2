@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append("..")
 import disassembler
+import adjustment
 
 def setup():
     pass
@@ -20,6 +21,10 @@ def test():
     #
 
     testrel32(d)
+
+def testadjustment():
+    adjustment.Problem("../thirdpat")
+    pass
 
 def testabs32(d, cnt):
     if len(d.receptor.abs32s) != cnt:
