@@ -23,7 +23,8 @@ def test():
     testrel32(d)
 
 def testadjustment():
-    adjustment.Problem("../thirdpat")
+    problem = adjustment.Problem("../thirdparty/elf-32-1","../thirdparty/elf-32-2")
+
     pass
 
 def testabs32(d, cnt):

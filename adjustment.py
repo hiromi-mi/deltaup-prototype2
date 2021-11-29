@@ -106,7 +106,7 @@ class Problem:
         return orig_parent.edges[orig_parent.edges.index(orig_label_info)]
 
 
-    def extend_assignment(self, new_label_info, orig_label_info):
+    def extend_assignment(self, new_info, old_info):
         # 前後のAddressを比較して, その old_rva と new_rva が一致しているかどうかを判定
         old_rva_base = old_info.label.rva;
         new_rva_base = new_info.label.rva;
@@ -141,7 +141,7 @@ class Problem:
                 continue
             if p_info.refs != m_info.refs:
                 break
-            assignone(p_info, m_info)
+            self.assignone(p_info, m_info)
             p_pos += 1
             m_pos += 1
         return p_pos - p_pos_start
@@ -154,8 +154,8 @@ class Problem:
         m_pos = m_pos_start - 1
 
         while (p_pos > 0 and m_pos > 0):
-            p_info = p_trace[p_pos]
-            m_info = m_trace[m_pos]
+            p_info = self.p_trace[p_pos]
+            m_info = self.m_trace[m_pos]
             if (p_info.assignment and m_info.assignment):
                 if p_info.label.index == m_info.label.index:
                     break
@@ -164,7 +164,7 @@ class Problem:
                 continue
             if p_info.refs != m_info.refs:
                 break
-            assignone(p_info, m_info)
+            self.assignone(p_info, m_info)
             p_pos -= 1
             m_pos -= 1
         return p_pos - p_pos_start
