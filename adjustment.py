@@ -1,3 +1,8 @@
+from typing import List
+
+from disassembler import Receptor
+
+
 class AdjustmentAll:
     def __init__(self):
         # {Label*, LabelInfo}
@@ -7,16 +12,21 @@ class AdjustmentAll:
 
     # make_label_info + reference_label
     #def make_label_infos(self, label, position):
-    def reference_label(self, trace, is_old, label):
+    def reference_label(self, trace, is_old, label : Label):
         slot = self.label_infos[label]
         if not slot.label:
             slot.label = label
             #slot.is_old = is_old
 
-        slot.positions_.append(position)
+        slot.positions_.append(label.position)
         return slot
 
-class Label2:
+class Label:
+    def __init__(self) -> None:
+        pass
+    pass
+
+class LabelInfo:
     def __init__(self):
         self.positions_ = []
 
@@ -25,7 +35,10 @@ class Node:
         pass
 
 class Problem:
-    def __init__(self, receptor_old, receptor_new):
+    queue: List[Node]
+    orig_root: Node
+    new_node: Node
+    def __init__(self, receptor_old : Receptor, receptor_new : Receptor):
         self.queue = []
         self.orig_root = Node()
         self.new_node = Node()
@@ -35,10 +48,10 @@ class Problem:
         self.receptor_new = receptor_new
 
         while (len(self.queue) > 0):
-            node = self.queue[-1]
+            node = self.queue.pop()
             self.try_solve(node)
 
-    def try_solve(self, new_node):
+    def try_solve(self, new_node : Node):
         front = new_node.edges[-1]
         if front.in_edge.assignment:
             # delete front
@@ -77,20 +90,20 @@ class Problem:
         self.add_to_queue(new_match)
         self.add_to_queue(new_node)
 
-    def add_to_queue(self, new_node):
+    def add_to_queue(self, new_node: Node):
         self.queue.append(new_node)
 
-    def assign_and_extend(self, new_label_info, orig_label_info):
+    def assign_and_extend(self, new_label_info : LabelInfo, orig_label_info : LabelInfo):
         self.assignone(new_label_info, orig_label_info)
         self.extend_assignment(new_label_info, orig_label_info)
 
-    def assignone(self, new_label_info, orig_label_info):
+    def assignone(self, new_label_info : LabelInfo, orig_label_info : LabelInfo):
         new_label_info.label.index = orig_label_info.label.index
 
         new_label_info.assignment = orig_label_info
         orig_label_info.assignment = new_label_info
 
-    def find_corresponding_orig_node(self, node):
+    def find_corresponding_orig_node(self, node : Node):
         if not node.prev:
             return self.orig_root
         new_parent = node.prev
@@ -106,10 +119,10 @@ class Problem:
         return orig_parent.edges[orig_parent.edges.index(orig_label_info)]
 
 
-    def extend_assignment(self, new_info, old_info):
+    def extend_assignment(self, new_info : LabelInfo, old_info : LabelInfo):
         # 前後のAddressを比較して, その old_rva と new_rva が一致しているかどうかを判定
-        old_rva_base = old_info.label.rva;
-        new_rva_base = new_info.label.rva;
+        old_rva_base = old_info.label.rva
+        new_rva_base = new_info.label.rva
 
         new_info_next = new_info.next_addr
         old_info_next = old_info.next_addr
@@ -125,13 +138,13 @@ class Problem:
             if old_rva - old_rva_base != new_rva - new_rva_base:
                 pass
 
-    def extend_sequence(self, p_pos_start, m_pos_start):
+    def extend_sequence(self, p_pos_start : int, m_pos_start : int):
         p_pos = p_pos_start + 1
         m_pos = m_pos_start + 1
 
         while (p_pos < len(self.p_trace) and m_pos < len(self.m_trace)):
-            p_info = p_trace[p_pos]
-            m_info = m_trace[m_pos]
+            p_info = self.p_trace[p_pos]
+            m_info = self.m_trace[m_pos]
 
             if (p_info.assignment and m_info.assignment):
                 if p_info.label.index == m_info.label.index:
@@ -146,7 +159,7 @@ class Problem:
             m_pos += 1
         return p_pos - p_pos_start
 
-    def extend_sequence_backwards(self, p_pos_start, m_pos_start):
+    def extend_sequence_backwards(self, p_pos_start :int, m_pos_start:int) -> int:
         if p_pos_start == 0 or m_pos_start == 0:
             return 0
 
@@ -169,7 +182,7 @@ class Problem:
             m_pos -= 1
         return p_pos - p_pos_start
 
-    def extend_nodes(self, node, trace):
+    def extend_nodes(self, node : Node, trace):
         if len(node.edges) > 0 or len(node.places) == 0:
             return
 

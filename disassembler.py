@@ -24,7 +24,7 @@ class Addresses:
     def __init__(self, data):
         self.data = data
 
-    def _get_jmp_call(self, p, end_ptr):
+    def _get_jmp_call(self, p : int, end_ptr : int):
         rel32 = None
         is_rip_relative = False
         if (p + 5 <= end_ptr):
@@ -72,7 +72,7 @@ class Addresses:
             pass
 
 class Disassembler:
-    def __init__(self, fname):
+    def __init__(self, fname : str):
         self.fname = fname
         receptor = Receptor()
         self.receptor = receptor
@@ -133,7 +133,7 @@ class Disassembler:
 
         #return receptor
 
-    def getabs32(self, f):
+    def getabs32(self, f : TextIO):
         for section in self.elfprogram.iter_sections():
             section_header = section.header
             start_offset = section_header.sh_offset
@@ -150,7 +150,7 @@ class Disassembler:
                 self.receptor.emit_abs32(rva)
 
 
-    def parse_file(self, f, receptor):
+    def parse_file(self, f, receptor : Receptor):
 
         elffile = ELFFile(f)
         symtable = elffile.get_section_by_name('.symtab')
