@@ -1,7 +1,11 @@
-from typing import List
+from typing import ClassVar, Dict, List
 
 from disassembler import Receptor
 
+class Label:
+    def __init__(self):
+        pass
+    pass
 
 class AdjustmentAll:
     def __init__(self):
@@ -21,17 +25,21 @@ class AdjustmentAll:
         slot.positions_.append(label.position)
         return slot
 
-class Label:
-    def __init__(self) -> None:
-        pass
-    pass
-
 class LabelInfo:
     def __init__(self):
         self.positions_ = []
 
 class Node:
-    def __init__(self):
+    in_edge: LabelInfo
+    prev: 'Node'
+    count : int
+    length : int
+    edges: Dict[LabelInfo, 'Node']
+    def __init__(self, in_edge : LabelInfo, prev: 'Node'):
+        self.in_edge = in_edge
+        self.prev = prev
+        # TODO prev.length == 0
+        self.length = prev.length + 1
         pass
 
 class Problem:
@@ -103,13 +111,13 @@ class Problem:
         new_label_info.assignment = orig_label_info
         orig_label_info.assignment = new_label_info
 
-    def find_corresponding_orig_node(self, node : Node):
+    def find_corresponding_orig_node(self, node : Node) -> Node:
         if not node.prev:
             return self.orig_root
         new_parent = node.prev
         orig_parent = self.find_corresponding_orig_node(new_parent)
         if not orig_parent:
-            return orig_parent
+            return None
 
         self.extend_nodes(orig_parent, self.orig_trace)
 
