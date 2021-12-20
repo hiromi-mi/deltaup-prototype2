@@ -26,6 +26,14 @@ class AdjustmentAll:
         return slot
 
 class LabelInfo:
+    assignment: 'LabelInfo'
+    label: Label
+    is_model : bool
+    refs_cnt : int
+    next_addr_labelinfo : 'LabelInfo'
+    prev_addr_labelinfo : 'LabelInfo'
+
+    positions_ : List[int]
     def __init__(self):
         self.positions_ = []
 
@@ -35,29 +43,51 @@ class Node:
     count : int
     length : int
     edges: Dict[LabelInfo, 'Node']
+    places: List[int]
+    edges_in_frequency_order : List['Node']
+
     def __init__(self, in_edge : LabelInfo, prev: 'Node'):
         self.in_edge = in_edge
         self.prev = prev
         # TODO prev.length == 0
         self.length = prev.length + 1
+        self.edges_in_frequency_order = []
         pass
 
+    def Weight() -> int:
+        return 
+
+Trace = List[LabelInfo]
+
 class Problem:
-    queue: List[Node]
+    worklist: List[Node]
     orig_root: Node
     new_node: Node
+    orig_trace : Trace
+    new_trace: Trace
+
+    # in_queue : bool # unused
     def __init__(self, receptor_old : Receptor, receptor_new : Receptor):
-        self.queue = []
+        self.worklist = []
         self.orig_root = Node()
         self.new_node = Node()
-        self.queue.append(self.new_node)
+        self.worklist.append(self.new_node)
         self.orig_trace = []
         self.receptor_old = receptor_old
         self.receptor_new = receptor_new
 
-        while (len(self.queue) > 0):
-            node = self.queue.pop()
+        while (len(self.worklist) > 0):
+            node = self.worklist.pop()
             self.try_solve(node)
+
+    def skip_committed_labels(self, node: Node):
+        self.extend_nodes(node, self.orig_trace)
+        
+        while node.edges_in_frequency_order[0].in_edge.assignment:
+            if len(node.edges_in_frequency_order) == 0:
+                break
+            node.edges_in_frequency_order.pop()
+            
 
     def try_solve(self, new_node : Node):
         front = new_node.edges[-1]
@@ -99,7 +129,8 @@ class Problem:
         self.add_to_queue(new_node)
 
     def add_to_queue(self, new_node: Node):
-        self.queue.append(new_node)
+        self.extend_nodes(new_node, self.orig_trace)
+        self.worklist.append(new_node)
 
     def assign_and_extend(self, new_label_info : LabelInfo, orig_label_info : LabelInfo):
         self.assignone(new_label_info, orig_label_info)
