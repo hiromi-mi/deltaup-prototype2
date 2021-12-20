@@ -32,6 +32,7 @@ class LabelInfo:
     refs_cnt : int
     next_addr_labelinfo : 'LabelInfo'
     prev_addr_labelinfo : 'LabelInfo'
+    rva: int
 
     positions_ : List[int]
     def __init__(self):
@@ -81,19 +82,22 @@ class Problem:
             self.try_solve(node)
 
     def skip_committed_labels(self, node: Node):
-        self.extend_nodes(node, self.orig_trace)
+        self.extend_nodes(node, self.new_trace)
         
         while node.edges_in_frequency_order[0].in_edge.assignment:
             if len(node.edges_in_frequency_order) == 0:
                 break
             node.edges_in_frequency_order.pop()
-            
+
 
     def try_solve(self, new_node : Node):
-        front = new_node.edges[-1]
+        front = new_node.edges_in_frequency_order[-1]
         if front.in_edge.assignment:
             # delete front
             new_node.edges.pop()
+            self.add_to_queue(front)
+            self.add_to_queue(new_node)
+            return
 
         orig_node = self.find_corresponding_orig_node(new_node)
         if not orig_node:
@@ -101,7 +105,7 @@ class Problem:
             return
 
         self.extend_nodes(orig_node, self.orig_trace)
-        # skip_committted_labels()
+        self.skip_committed_labels(orig_node)
         if len(orig_node.edges) == 0:
             print("Cannot find model node due to no edges")
             return
@@ -157,33 +161,77 @@ class Problem:
 
         return orig_parent.edges[orig_parent.edges.index(orig_label_info)]
 
-
-    def extend_assignment(self, new_info : LabelInfo, old_info : LabelInfo):
-        # 前後のAddressを比較して, その old_rva と new_rva が一致しているかどうかを判定
-        old_rva_base = old_info.label.rva
-        new_rva_base = new_info.label.rva
-
-        new_info_next = new_info.next_addr
-        old_info_next = old_info.next_addr
-
+    def _extend_assignment_forward(self, new_info_next: LabelInfo, old_info_next: LabelInfo, new_rva_base: int, old_rva_base: int):
         while (new_info_next and old_info_next):
             if old_info_next.assignment:
                 break
 
             # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
-            old_rva = old_info_next.next_addr
-            new_rva = new_info_next.next_addr
+            old_rva = old_info_next.next_addr_labelinfo.rva
+            new_rva = new_info_next.next_addr_labelinfo.rva
 
             if old_rva - old_rva_base != new_rva - new_rva_base:
                 pass
+
+            old_info_next_next = old_info_next.next_addr_labelinfo
+            new_info_next_next = new_info_next.next_addr_labelinfo
+
+            self.assignone(new_info_next, old_info_next)
+
+            if (new_info_next.refs_cnt == old_info_next.refs_cnt and new_info_next.refs_cnt == 1):
+                self.extend_sequence(new_info_next.positions_[0], old_info_next.positions_[0])
+                self.extend_sequence_backwards(new_info_next.positions_[0], old_info_next.positions_[0])
+
+            new_info_next = new_info_next_next
+            old_info_next = old_info_next_next
+
+    def _extend_assignment_backward(self, new_info_prev: LabelInfo, old_info_prev: LabelInfo, new_rva_base: int, old_rva_base: int):
+        while (new_info_prev and old_info_prev):
+            if old_info_prev.assignment:
+                break
+
+            # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
+            old_rva = old_info_prev.prev_addr_labelinfo.rva
+            new_rva = new_info_prev.prev_addr_labelinfo.rva
+
+            if old_rva - old_rva_base != new_rva - new_rva_base:
+                pass
+
+            old_info_prev_prev = old_info_prev.prev_addr_labelinfo
+            new_info_prev_prev = new_info_prev.prev_addr_labelinfo
+
+            self.assignone(new_info_prev, old_info_prev)
+
+            if (new_info_prev.refs_cnt == old_info_prev.refs_cnt):
+                self.extend_sequence(new_info_prev.positions_[0], old_info_prev.positions_[0])
+                self.extend_sequence_backwards(new_info_prev.positions_[0], old_info_prev.positions_[0])
+
+            new_info_prev = new_info_prev_prev
+            old_info_prev = old_info_prev_prev
+    def extend_assignment(self, new_info : LabelInfo, old_info : LabelInfo):
+        # 前後のAddressを比較して, その old_rva と new_rva が一致しているかどうかを判定
+        old_rva_base = old_info.label.rva
+        new_rva_base = new_info.label.rva
+
+        new_info_next = new_info.next_addr_labelinfo
+        old_info_next = old_info.next_addr_labelinfo
+
+        # 前方探索
+        self._extend_assignment_forward(new_info_next, old_info_next, new_rva_base, old_rva_base)
+
+        # 後方探索
+        new_info_prev = new_info.prev_addr_labelinfo
+        old_info_prev = old_info.prev_addr_labelinfo
+
+        self._extend_assignment_backward(new_info_prev, old_info_prev, new_rva_base, old_rva_base)
 
     def extend_sequence(self, p_pos_start : int, m_pos_start : int):
         p_pos = p_pos_start + 1
         m_pos = m_pos_start + 1
 
-        while (p_pos < len(self.p_trace) and m_pos < len(self.m_trace)):
-            p_info = self.p_trace[p_pos]
-            m_info = self.m_trace[m_pos]
+        while (p_pos < len(self.new_trace) and m_pos < len(self.orig_trace)):
+            p_info = self.new_trace[p_pos]
+            m_info = self.orig_trace[m_pos]
 
             if (p_info.assignment and m_info.assignment):
                 if p_info.label.index == m_info.label.index:
@@ -206,8 +254,8 @@ class Problem:
         m_pos = m_pos_start - 1
 
         while (p_pos > 0 and m_pos > 0):
-            p_info = self.p_trace[p_pos]
-            m_info = self.m_trace[m_pos]
+            p_info = self.new_trace[p_pos]
+            m_info = self.orig_trace[m_pos]
             if (p_info.assignment and m_info.assignment):
                 if p_info.label.index == m_info.label.index:
                     break
