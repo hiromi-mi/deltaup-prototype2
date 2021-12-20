@@ -1,6 +1,8 @@
 # deltaup-prototype2
 Prototype Reimplemnetation of Courgette Binary Differenential Program
 
+This is derived work of Courgette (moved to python)
+
 ## License of 3rdparty content
 
 - thirdparty/elf-32-high-bss : BSD-Styled license at thirdparty/LICENSE
