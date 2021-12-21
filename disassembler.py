@@ -2,7 +2,13 @@ from elftools.elf.elffile import ELFFile
 from capstone import *
 from typing import *
 
+from label import Label
+
 class Receptor:
+    abs32s: List[Label]
+    rel32s: List[Label]
+    emitted_bytes: List[bytes]
+    origin: int
     def __init__(self):
         self.program = []
         self.emitted_bytes = []
@@ -10,19 +16,21 @@ class Receptor:
         self.origin = 0
         self.abs32s = []
 
-    def emit_rel32(self, label):
+    def emit_rel32(self, label : Label):
         self.rel32s.append(label)
-    def emit_origin(self, origin):
+    def emit_origin(self, origin: int):
         self.origin = origin
-    def emit_abs32(self, abs32):
+    def emit_abs32(self, abs32 : Label):
         self.abs32s.append(abs32)
-    def emit_bytes(self, program):
+    def emit_bytes(self, program : bytes):
         self.emitted_bytes.append(program)
 
 class Addresses:
     data = b"" # data
-    def __init__(self, data):
+    receptor: Receptor
+    def __init__(self, data : bytes, receptor: Receptor):
         self.data = data
+        self.receptor = receptor
 
     def _get_jmp_call(self, p : int, end_ptr : int):
         rel32 = None
@@ -52,10 +60,11 @@ class Addresses:
                 rel32 = self.data[p+3:p+7]
                 is_rip_relative = True
 
+        
         return rel32
 
 
-    def treat_rel32(self, rel32):
+    def treat_rel32(self, rel32 : int):
         if not rel32:
             return None
 
@@ -68,8 +77,9 @@ class Addresses:
         p = 0 # start_offset
         end_pointer = 0
         while p < end_pointer:
-            self._get_jmp_call(p, 100)
-            pass
+            rel32 = self._get_jmp_call(p, 100)
+            if rel32:
+                self.receptor.emit_rel32(rel32)
 
 class Disassembler:
     def __init__(self, fname : str):
@@ -81,14 +91,14 @@ class Disassembler:
         f = open(self.fname, "rb")
         self.parse_file(f, receptor)
 
-    def is_valid_target_rva(self, rva):
+    def is_valid_target_rva(self, rva : int):
         if rva == "unassigned":
             return False
 
         # read of headers
         return False
 
-    def file_offset_to_rva(self, offset):
+    def file_offset_to_rva(self, offset: int):
         # すべての elf section をみてなおす
         # section内部に入っているときは sh_addr + offset - section_begin
         with open(self.fname) as f:
@@ -101,7 +111,7 @@ class Disassembler:
                 if (offset >= section_begin and offset < section_end):
                     return section_header.sh_addr + offset - section_begin
 
-    def rva_to_file_offset(self, rva):
+    def rva_to_file_offset(self, rva: int):
         # rva と file offset を見てなおす
         with open(self.fname) as f:
             x = ELFFile(f)
@@ -112,7 +122,7 @@ class Disassembler:
                 section_end = section_header.sh_size
                 return section_header.sh_offset + rva - section_begin
 
-    def check_section(self, rva):
+    def check_section(self, rva: int):
         file_offset = self.rva_to_file_offset(rva)
         # TODO sections
         with open(self.fname) as f:
@@ -133,7 +143,7 @@ class Disassembler:
 
         #return receptor
 
-    def getabs32(self, f : TextIO):
+    def _getabs32(self, f : TextIO):
         for section in self.elfprogram.iter_sections():
             section_header = section.header
             start_offset = section_header.sh_offset
@@ -150,13 +160,13 @@ class Disassembler:
                 self.receptor.emit_abs32(rva)
 
 
-    def parse_file(self, f, receptor : Receptor):
+    def parse_file(self, f : TextIO, receptor : Receptor):
 
         elffile = ELFFile(f)
         symtable = elffile.get_section_by_name('.symtab')
         self.program = f
         self.elfprogram = elffile
-        self.getabs32(f)
+        self._getabs32(f)
 
         file_offset = 0
         abs_offsets = []

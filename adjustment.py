@@ -1,29 +1,8 @@
 from typing import ClassVar, Dict, List
 
 from disassembler import Receptor
+from label import Label
 
-class Label:
-    def __init__(self):
-        pass
-    pass
-
-class AdjustmentAll:
-    def __init__(self):
-        # {Label*, LabelInfo}
-        self.label_infos = {}
-        self.old_abs32 = []
-        self.new_rel32 = []
-
-    # make_label_info + reference_label
-    #def make_label_infos(self, label, position):
-    def reference_label(self, trace, is_old, label : Label):
-        slot = self.label_infos[label]
-        if not slot.label:
-            slot.label = label
-            #slot.is_old = is_old
-
-        slot.positions_.append(label.position)
-        return slot
 
 class LabelInfo:
     assignment: 'LabelInfo'
@@ -37,6 +16,7 @@ class LabelInfo:
     positions_ : List[int]
     def __init__(self):
         self.positions_ = []
+Trace = List[LabelInfo]
 
 class Node:
     in_edge: LabelInfo
@@ -58,7 +38,6 @@ class Node:
     def Weight() -> int:
         return 
 
-Trace = List[LabelInfo]
 
 class Problem:
     worklist: List[Node]
@@ -280,3 +259,30 @@ class Problem:
                 slot = node.edges[node.edges.index(label_info)]
                 pass
 
+
+class AdjustmentAll:
+    old_abs32: Trace
+    new_abs32: Trace
+    new_rel32: Trace
+    old_rel32: Trace
+    label_infos: Dict[Label, LabelInfo]
+    def __init__(self, old_label_abs32: List[Label], old_label_rel32: List[Label]):
+        # {Label*, LabelInfo}
+        self.label_infos = {}
+        self.old_abs32 = []
+        self.new_rel32 = []
+        self._collect_traces(self.old_abs32)
+
+    def _collect_traces(self, abs32: Trace, rel32: Trace, is_model: bool):
+        self.reference_label(abs32, is_model)
+
+    # make_label_info + reference_label
+    #def make_label_infos(self, label, position):
+    def reference_label(self, trace : Trace, is_old : bool, label : Label):
+        slot = self.label_infos[label]
+        if not slot.label:
+            slot.label = label
+            #slot.is_old = is_old
+
+        slot.positions_.append(label.position)
+        return slot
