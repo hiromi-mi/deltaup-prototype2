@@ -32,7 +32,7 @@ class Addresses:
         self.data = data
         self.receptor = receptor
 
-    def _get_jmp_call(self, p : int, end_ptr : int):
+    def _get_jmp_call(self, p : int, end_ptr : int) -> Label:
         rel32 = None
         is_rip_relative = False
         if (p + 5 <= end_ptr):
@@ -60,9 +60,11 @@ class Addresses:
                 rel32 = self.data[p+3:p+7]
                 is_rip_relative = True
 
-        
-        return rel32
-
+        if rel32:
+            label = Label(rel32)
+            return label
+        else:
+            return None
 
     def treat_rel32(self, rel32 : int):
         if not rel32:
@@ -91,7 +93,7 @@ class Disassembler:
         f = open(self.fname, "rb")
         self.parse_file(f, receptor)
 
-    def is_valid_target_rva(self, rva : int):
+    def is_valid_target_rva(self, rva : int) -> bool:
         if rva == "unassigned":
             return False
 

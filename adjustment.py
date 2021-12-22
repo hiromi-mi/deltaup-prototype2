@@ -11,7 +11,8 @@ class LabelInfo:
     refs_cnt : int
     next_addr_labelinfo : 'LabelInfo'
     prev_addr_labelinfo : 'LabelInfo'
-    rva: int
+    # rva: int
+    # rva is already included in label
 
     positions_ : List[int]
     def __init__(self):
@@ -119,6 +120,9 @@ class Problem:
         self.assignone(new_label_info, orig_label_info)
         self.extend_assignment(new_label_info, orig_label_info)
 
+    """
+    Corresponds new_label_info and orig_label_info.
+    """
     def assignone(self, new_label_info : LabelInfo, orig_label_info : LabelInfo):
         new_label_info.label.index = orig_label_info.label.index
 
