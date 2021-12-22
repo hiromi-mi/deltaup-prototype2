@@ -275,10 +275,16 @@ class AdjustmentAll:
         self.label_infos = {}
         self.old_abs32 = []
         self.new_rel32 = []
-        self._collect_traces(self.old_abs32)
+        self._collect_traces(self.old_abs32, self.old_rel32, True)
+        self._collect_traces(self.new_abs32, self.new_rel32, False)
+
+        old_receptor = Receptor()
+        new_receptor = Receptor()
+        prob = Problem(old_receptor, new_receptor)
 
     def _collect_traces(self, abs32: Trace, rel32: Trace, is_model: bool):
         self.reference_label(abs32, is_model)
+        self.reference_label(rel32, is_model)
 
     # make_label_info + reference_label
     #def make_label_infos(self, label, position):

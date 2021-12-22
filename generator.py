@@ -1,7 +1,8 @@
+from typing import TextIO
 import bsdiff4
 from disassembler import Receptor
 
-def generate(f, receptor_old : Receptor, receptor_new : Receptor):
+def generate(f : TextIO, receptor_old : Receptor, receptor_new : Receptor):
     f.write(bsdiff4.diff(receptor_old.abs32, receptor_new.abs32))
     f.write(bsdiff4.diff(receptor_new.rel32, receptor_new.rel32))
     f.write(bsdiff4.diff(receptor_new.emitted_bytes, receptor_new.emitted_bytes))

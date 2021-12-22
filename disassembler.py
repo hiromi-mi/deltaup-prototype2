@@ -100,7 +100,7 @@ class Disassembler:
         # read of headers
         return False
 
-    def file_offset_to_rva(self, offset: int):
+    def file_offset_to_rva(self, offset: int) -> int:
         # すべての elf section をみてなおす
         # section内部に入っているときは sh_addr + offset - section_begin
         with open(self.fname) as f:
