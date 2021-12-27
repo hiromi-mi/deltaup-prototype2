@@ -1,3 +1,4 @@
+from os import close
 from elftools.elf.elffile import ELFFile
 from capstone import *
 from typing import *
@@ -92,6 +93,7 @@ class Disassembler:
         instrs_all = []
         f = open(self.fname, "rb")
         self.parse_file(f, receptor)
+        close(f)
 
     def is_valid_target_rva(self, rva : int) -> bool:
         if rva == "unassigned":

@@ -261,7 +261,14 @@ class Problem:
             if index < len(trace):
                 label_info = trace[index]
                 slot = node.edges[node.edges.index(label_info)]
-                pass
+                if slot is None:
+                    slot = Node(label_info, node)
+                    # all_nodes_.push_back(slot)
+                    node.edges_in_frequency_order.append(slot)
+
+                    
+                slot.count += 1
+                slot.places.append(index + 1)
 
 
 class AdjustmentAll:
@@ -288,11 +295,11 @@ class AdjustmentAll:
 
     # make_label_info + reference_label
     #def make_label_infos(self, label, position):
-    def reference_label(self, trace : Trace, is_old : bool, label : Label):
+    def reference_label(self, trace : Trace, is_model : bool, label : Label):
         slot = self.label_infos[label]
         if not slot.label:
             slot.label = label
-            #slot.is_old = is_old
+            slot.is_model = is_model
 
         slot.positions_.append(label.position)
         return slot
