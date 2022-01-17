@@ -34,7 +34,7 @@ class Addresses:
         self.data = data
         self.receptor = receptor
 
-    def _get_jmp_call(self, p : int, end_ptr : int) -> Label:
+    def _get_jmp_call(self, p : int, end_ptr : int) -> Optional[Label]:
         rel32 = None
         is_rip_relative = False
         if (p + 5 <= end_ptr):
@@ -58,12 +58,12 @@ class Addresses:
                 is_rip_relative = True
 
         if (p + 7 <= end_ptr):
-            if (self.data[p] & 0xF2) == 0x40 or (self.data[p] & 0xF2 == 0x66) and (p[1] in [0x89, 0x8B, 0x8D]) and (p[2] & 0xC7 == 0x05):
+            if (self.data[p] & 0xF2) == 0x40 or (self.data[p] & 0xF2 == 0x66) and (self.data[p+1] in [0x89, 0x8B, 0x8D]) and (self.data[p+2] & 0xC7 == 0x05):
                 rel32 = self.data[p+3:p+7]
                 is_rip_relative = True
 
         if rel32:
-            label = Label(rel32)
+            label = Label(int.from_bytes(rel32, 'little'))
             return label
         else:
             return None
@@ -116,6 +116,7 @@ class Disassembler:
                 if (offset >= section_begin and offset < section_end):
                     return section_header.sh_addr + offset - section_begin
 
+
     def rva_to_file_offset(self, rva: int):
         # rva と file offset を見てなおす
         with open(self.fname) as f:
@@ -165,7 +166,7 @@ class Disassembler:
                 self.receptor.emit_abs32(rva)
 
 
-    def parse_file(self, f : io.StringIO, receptor : Receptor):
+    def parse_file(self, f : io.BytesIO, receptor : Receptor):
 
         elffile = ELFFile(f)
         symtable = elffile.get_section_by_name('.symtab')

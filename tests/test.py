@@ -19,6 +19,7 @@ def test():
     # main
     #     115d:       e8 d7 ff ff ff          call   1139 <subroutine>
     #
+    testadjustment()
 
     testrel32(d)
 

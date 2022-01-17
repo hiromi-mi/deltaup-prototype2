@@ -1,4 +1,5 @@
-from typing import ClassVar, Dict, List
+from optparse import Option
+from typing import ClassVar, Dict, List, Optional
 
 from disassembler import Receptor
 from label import Label
@@ -20,42 +21,57 @@ class LabelInfo:
 Trace = List[LabelInfo]
 
 class Node:
-    in_edge: LabelInfo
-    prev: 'Node'
+    in_edge: Optional[LabelInfo]
+    prev: Optional['Node']
     count : int
     length : int
     edges: Dict[LabelInfo, 'Node']
     places: List[int]
     edges_in_frequency_order : List['Node']
 
-    def __init__(self, in_edge : LabelInfo, prev: 'Node'):
+    def __init__(self, in_edge : Optional[LabelInfo], prev: Optional['Node']):
         self.in_edge = in_edge
         self.prev = prev
-        # TODO prev.length == 0
-        self.length = prev.length + 1
+        self.places = [] # initialize TODO
+        if prev is None:
+            self.length = 0
+        else:
+            self.length = prev.length + 1
+
         self.edges_in_frequency_order = []
         pass
 
-    def Weight() -> int:
-        return 
+    def Weight(self) -> int:
+        return len(self.edges_in_frequency_order)
 
 
 class Problem:
     worklist: List[Node]
     orig_root: Node
-    new_node: Node
+    new_root: Node
     orig_trace : Trace
     new_trace: Trace
 
+    def _make_root_node(self, trace: Trace) -> Node:
+        node = Node(None, None)
+        for i in range(len(trace)):
+            node.places.append(i)
+        return node
+
     # in_queue : bool # unused
-    def __init__(self, receptor_old : Receptor, receptor_new : Receptor):
+    def __init__(self, old_trace : Trace, new_trace : Trace):
         self.worklist = []
-        self.orig_root = Node()
-        self.new_node = Node()
-        self.worklist.append(self.new_node)
-        self.orig_trace = []
-        self.receptor_old = receptor_old
-        self.receptor_new = receptor_new
+
+        self.orig_trace = old_trace
+        self.new_trace = new_trace
+        #self.receptor_old = receptor_old
+        #self.receptor_new = receptor_new
+
+        self.orig_root = self._make_root_node(self.orig_trace)
+        self.new_root = self._make_root_node(self.new_trace)
+
+        self.extend_nodes(self.new_root, self.new_trace)
+        self.worklist.append(self.new_root)
 
         while (len(self.worklist) > 0):
             node = self.worklist.pop()
@@ -63,7 +79,7 @@ class Problem:
 
     def skip_committed_labels(self, node: Node):
         self.extend_nodes(node, self.new_trace)
-        
+
         while node.edges_in_frequency_order[0].in_edge.assignment:
             if len(node.edges_in_frequency_order) == 0:
                 break
@@ -74,7 +90,7 @@ class Problem:
         front = new_node.edges_in_frequency_order[-1]
         if front.in_edge.assignment:
             # delete front
-            new_node.edges.pop()
+            new_node.edges_in_frequency_order.pop()
             self.add_to_queue(front)
             self.add_to_queue(new_node)
             return
@@ -86,18 +102,18 @@ class Problem:
 
         self.extend_nodes(orig_node, self.orig_trace)
         self.skip_committed_labels(orig_node)
-        if len(orig_node.edges) == 0:
+        if len(orig_node.edges_in_frequency_order) == 0:
             print("Cannot find model node due to no edges")
             return
 
-        orig_match = orig_node.edges[-1]
-        new_match = new_node.edges[-1]
+        orig_match = orig_node.edges_in_frequency_order[-1]
+        new_match = new_node.edges_in_frequency_order[-1]
         if orig_match.count > 1.1 * new_match.count or new_match.count > 1.1 * orig_match.count:
             print("Distribution Mismatch")
             return
 
-        orig_node.edges.pop()
-        new_node.edges.pop()
+        orig_node.edges_in_frequency_order.pop()
+        new_node.edges_in_frequency_order.pop()
 
         new_label_info = new_match.in_edge
         orig_label_info = orig_match.in_edge
@@ -129,7 +145,7 @@ class Problem:
         new_label_info.assignment = orig_label_info
         orig_label_info.assignment = new_label_info
 
-    def find_corresponding_orig_node(self, node : Node) -> Node:
+    def find_corresponding_orig_node(self, node : Node) -> Optional[Node]:
         if not node.prev:
             return self.orig_root
         new_parent = node.prev
@@ -142,7 +158,7 @@ class Problem:
         new_label_info = node.in_edge
         orig_label_info = new_label_info.assignment
 
-        return orig_parent.edges[orig_parent.edges.index(orig_label_info)]
+        return orig_parent.edges[orig_parent.edges[orig_label_info]]
 
     def _extend_assignment_forward(self, new_info_next: LabelInfo, old_info_next: LabelInfo, new_rva_base: int, old_rva_base: int):
         while (new_info_next and old_info_next):
@@ -150,8 +166,8 @@ class Problem:
                 break
 
             # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
-            old_rva = old_info_next.next_addr_labelinfo.rva
-            new_rva = new_info_next.next_addr_labelinfo.rva
+            old_rva = old_info_next.next_addr_labelinfo.label.rva
+            new_rva = new_info_next.next_addr_labelinfo.label.rva
 
             if old_rva - old_rva_base != new_rva - new_rva_base:
                 pass
@@ -174,8 +190,8 @@ class Problem:
                 break
 
             # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
-            old_rva = old_info_prev.prev_addr_labelinfo.rva
-            new_rva = new_info_prev.prev_addr_labelinfo.rva
+            old_rva = old_info_prev.prev_addr_labelinfo.label.rva
+            new_rva = new_info_prev.prev_addr_labelinfo.label.rva
 
             if old_rva - old_rva_base != new_rva - new_rva_base:
                 pass
@@ -222,7 +238,7 @@ class Problem:
                 p_pos += 1
                 m_pos += 1
                 continue
-            if p_info.refs != m_info.refs:
+            if p_info.refs_cnt != m_info.refs_cnt:
                 break
             self.assignone(p_info, m_info)
             p_pos += 1
@@ -245,28 +261,28 @@ class Problem:
                 p_pos -= 1
                 m_pos -= 1
                 continue
-            if p_info.refs != m_info.refs:
+            if p_info.refs_cnt != m_info.refs_cnt:
                 break
             self.assignone(p_info, m_info)
             p_pos -= 1
             m_pos -= 1
         return p_pos - p_pos_start
 
-    def extend_nodes(self, node : Node, trace):
-        if len(node.edges) > 0 or len(node.places) == 0:
+    def extend_nodes(self, node : Node, trace : Trace):
+        if len(node.edges_in_frequency_order) > 0 or len(node.places) == 0:
             return
 
-        for i in range(node.places):
+        for i in range(len(node.places)):
             index = node.places[i]
             if index < len(trace):
                 label_info = trace[index]
-                slot = node.edges[node.edges.index(label_info)]
+                slot = node.edges_in_frequency_order[node.edges_in_frequency_order.index(label_info)]
                 if slot is None:
                     slot = Node(label_info, node)
                     # all_nodes_.push_back(slot)
                     node.edges_in_frequency_order.append(slot)
 
-                    
+
                 slot.count += 1
                 slot.places.append(index + 1)
 
@@ -287,11 +303,15 @@ class AdjustmentAll:
 
         old_receptor = Receptor()
         new_receptor = Receptor()
-        prob = Problem(old_receptor, new_receptor)
+        prob = Problem(self.old_abs32, self.new_abs32)
+        prob = Problem(self.old_rel32, self.new_rel32)
 
-    def _collect_traces(self, abs32: Trace, rel32: Trace, is_model: bool):
-        self.reference_label(abs32, is_model)
-        self.reference_label(rel32, is_model)
+
+    def _collect_traces(self, receptor: Receptor, abs32: Trace, rel32: Trace, is_model: bool):
+        for x in receptor.abs32s:
+            self.reference_label(abs32, is_model, x)
+        for x in receptor.rel32s:
+            self.reference_label(rel32, is_model, x)
 
     # make_label_info + reference_label
     #def make_label_infos(self, label, position):
@@ -301,5 +321,6 @@ class AdjustmentAll:
             slot.label = label
             slot.is_model = is_model
 
-        slot.positions_.append(label.position)
+        slot.positions_.append(label.rva)
+        slot.refs_cnt += 1
         return slot
