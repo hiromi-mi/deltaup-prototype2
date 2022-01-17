@@ -158,6 +158,7 @@ class Problem:
         new_label_info = node.in_edge
         orig_label_info = new_label_info.assignment
 
+# TODO
         return orig_parent.edges[orig_parent.edges[orig_label_info]]
 
     def _extend_assignment_forward(self, new_info_next: LabelInfo, old_info_next: LabelInfo, new_rva_base: int, old_rva_base: int):
@@ -276,7 +277,7 @@ class Problem:
             index = node.places[i]
             if index < len(trace):
                 label_info = trace[index]
-                slot = node.edges_in_frequency_order[node.edges_in_frequency_order.index(label_info)]
+                slot = node.edges[label_info]
                 if slot is None:
                     slot = Node(label_info, node)
                     # all_nodes_.push_back(slot)

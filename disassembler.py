@@ -149,7 +149,7 @@ class Disassembler:
 
         #return receptor
 
-    def _getabs32(self, f : io.StringIO):
+    def _getabs32(self, f : io.BytesIO):
         for section in self.elfprogram.iter_sections():
             section_header = section.header
             start_offset = section_header.sh_offset
