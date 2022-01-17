@@ -2,6 +2,7 @@ from os import close
 from elftools.elf.elffile import ELFFile
 from capstone import *
 from typing import *
+import io
 
 from label import Label
 
@@ -93,7 +94,7 @@ class Disassembler:
         instrs_all = []
         f = open(self.fname, "rb")
         self.parse_file(f, receptor)
-        close(f)
+        f.close()
 
     def is_valid_target_rva(self, rva : int) -> bool:
         if rva == "unassigned":
@@ -147,7 +148,7 @@ class Disassembler:
 
         #return receptor
 
-    def _getabs32(self, f : TextIO):
+    def _getabs32(self, f : io.StringIO):
         for section in self.elfprogram.iter_sections():
             section_header = section.header
             start_offset = section_header.sh_offset
@@ -164,7 +165,7 @@ class Disassembler:
                 self.receptor.emit_abs32(rva)
 
 
-    def parse_file(self, f : TextIO, receptor : Receptor):
+    def parse_file(self, f : io.StringIO, receptor : Receptor):
 
         elffile = ELFFile(f)
         symtable = elffile.get_section_by_name('.symtab')
@@ -193,7 +194,7 @@ class Disassembler:
             header = section.header.sh_type
             # 各セクションヘッダを見つつ
             if header == 'SHT_REL':
-                addresses = Addresses(code)
+                addresses = Addresses(code, receptor)
                 addresses.treat_rel32(0)
                 continue
             if header == 'SHT_PROGBITS':
