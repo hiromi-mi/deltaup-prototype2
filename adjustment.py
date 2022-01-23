@@ -7,7 +7,7 @@ from label import Label
 
 class LabelInfo:
     assignment: 'LabelInfo'
-    label: Label
+    label: Optional[Label]
     is_model : bool
     refs_cnt : int
     next_addr_labelinfo : 'LabelInfo'
@@ -18,6 +18,8 @@ class LabelInfo:
     positions_ : List[int]
     def __init__(self):
         self.positions_ = []
+        self.label = None
+        self.refs_cnt = 0
 Trace = List[LabelInfo]
 
 class Node:
@@ -57,6 +59,7 @@ class Problem:
         node = Node(None, None)
         for i in range(len(trace)):
             node.places.append(i)
+        self.extend_nodes(node, trace)
         return node
 
     # in_queue : bool # unused
@@ -295,30 +298,35 @@ class AdjustmentAll:
     new_rel32: Trace
     old_rel32: Trace
     label_infos: Dict[Label, LabelInfo]
-    def __init__(self, old_label_abs32: List[Label], old_label_rel32: List[Label]):
+    def __init__(self, old : Receptor, new: Receptor):
         # {Label*, LabelInfo}
         self.label_infos = {}
         self.old_abs32 = []
+        self.old_rel32 = []
         self.new_rel32 = []
-        self._collect_traces(self.old_abs32, self.old_rel32, True)
-        self._collect_traces(self.new_abs32, self.new_rel32, False)
+        self.new_abs32 = []
+        self._collect_traces(old, self.old_abs32, self.old_rel32, True)
+        self._collect_traces(new, self.new_abs32, self.new_rel32, False)
 
-        old_receptor = Receptor()
-        new_receptor = Receptor()
+        old_receptor = old
+        new_receptor = new
         prob = Problem(self.old_abs32, self.new_abs32)
         prob = Problem(self.old_rel32, self.new_rel32)
 
 
     def _collect_traces(self, receptor: Receptor, abs32: Trace, rel32: Trace, is_model: bool):
         for x in receptor.abs32s:
-            self.reference_label(abs32, is_model, x)
+            abs32.append(self.reference_label(abs32, is_model, x))
         for x in receptor.rel32s:
-            self.reference_label(rel32, is_model, x)
+            rel32.append(self.reference_label(rel32, is_model, x))
 
     # make_label_info + reference_label
     #def make_label_infos(self, label, position):
     def reference_label(self, trace : Trace, is_model : bool, label : Label):
-        slot = self.label_infos[label]
+        if label in self.label_infos:
+            slot = self.label_infos[label]
+        else:
+            slot = LabelInfo()
         if not slot.label:
             slot.label = label
             slot.is_model = is_model

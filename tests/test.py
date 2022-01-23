@@ -27,7 +27,7 @@ def test():
 def testadjustment():
     disasm1 = disassembler.Disassembler("../thirdparty/elf-32-1")
     disasm2 = disassembler.Disassembler("../thirdparty/elf-32-2")
-    problem = adjustment.AdjustmentAll(disasm1, disasm2)
+    problem = adjustment.AdjustmentAll(disasm1.receptor, disasm2.receptor)
     # problem = adjustment.Problem("../thirdparty/elf-32-1","../thirdparty/elf-32-2")
 
     pass

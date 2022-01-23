@@ -69,6 +69,7 @@ class Addresses:
             return None
 
     def treat_rel32(self, rel32 : int):
+        self.get_rel32()
         if not rel32:
             return None
 
@@ -91,7 +92,7 @@ class Disassembler:
         receptor = Receptor()
         self.receptor = receptor
 
-        instrs_all = []
+        # instrs_all = []
         f = open(self.fname, "rb")
         self.parse_file(f, receptor)
         f.close()
@@ -163,7 +164,7 @@ class Disassembler:
                 if reloc.entry.r_info_type != 8:
                     continue
                 rva = reloc.entry.r_offset
-                self.receptor.emit_abs32(rva)
+                self.receptor.emit_abs32(Label(rva))
 
 
     def parse_file(self, f : io.BytesIO, receptor : Receptor):
@@ -200,6 +201,7 @@ class Disassembler:
             header = section.header.sh_type
             # 各セクションヘッダを見つつ
             if header == 'SHT_REL':
+                code = section.data
                 addresses = Addresses(code, receptor)
                 addresses.treat_rel32(0)
                 continue
