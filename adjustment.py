@@ -1,3 +1,4 @@
+from cProfile import label
 from optparse import Option
 from typing import ClassVar, Dict, List, Optional
 
@@ -6,7 +7,7 @@ from label import Label
 
 
 class LabelInfo:
-    assignment: 'LabelInfo'
+    assignment: 'LabelInfo | None'
     label: Optional[Label]
     is_model : bool
     refs_cnt : int
@@ -20,6 +21,9 @@ class LabelInfo:
         self.positions_ = []
         self.label = None
         self.refs_cnt = 0
+        self.assignment = None
+        self.next_addr_labelinfo = None
+        self.prev_addr_labelinfo = None
 Trace = List[LabelInfo]
 
 class Node:
@@ -42,10 +46,11 @@ class Node:
 
         self.edges = {} # TODO
         self.edges_in_frequency_order = []
+        self.count = 0
         pass
 
     def Weight(self) -> int:
-        return len(self.edges_in_frequency_order)
+        return len(self.edges_in_frequency_order[0].count)
 
 
 class Problem:
@@ -54,6 +59,7 @@ class Problem:
     new_root: Node
     orig_trace : Trace
     new_trace: Trace
+    unassigned: List[Node]
 
     def _make_root_node(self, trace: Trace) -> Node:
         node = Node(None, None)
@@ -65,6 +71,7 @@ class Problem:
     # in_queue : bool # unused
     def __init__(self, old_trace : Trace, new_trace : Trace):
         self.worklist = []
+        self.unassigned = []
 
         self.orig_trace = old_trace
         self.new_trace = new_trace
@@ -74,7 +81,7 @@ class Problem:
         self.orig_root = self._make_root_node(self.orig_trace)
         self.new_root = self._make_root_node(self.new_trace)
 
-        self.extend_nodes(self.new_root, self.new_trace)
+        #self.extend_nodes(self.new_root, self.new_trace)
         self.worklist.append(self.new_root)
 
         while (len(self.worklist) > 0):
@@ -91,6 +98,8 @@ class Problem:
 
 
     def try_solve(self, new_node : Node):
+        if len(new_node.edges_in_frequency_order) == 0:
+            print(f"Error {new_node.__dict__}")
         front = new_node.edges_in_frequency_order[-1]
         if front.in_edge.assignment:
             # delete front
@@ -107,6 +116,7 @@ class Problem:
         self.extend_nodes(orig_node, self.orig_trace)
         self.skip_committed_labels(orig_node)
         if len(orig_node.edges_in_frequency_order) == 0:
+            self.unassigned.append(orig_node)
             print("Cannot find model node due to no edges")
             return
 
@@ -122,8 +132,9 @@ class Problem:
         new_label_info = new_match.in_edge
         orig_label_info = orig_match.in_edge
         m_index = new_label_info.label.index
-        if m_index != "noindex":
+        if m_index != -1:
             print("Error: Cannot Unassigned Model Label")
+            self.unassigned.append(new_node)
             return
 
         self.assign_and_extend(new_label_info, orig_label_info)
@@ -134,6 +145,9 @@ class Problem:
 
     def add_to_queue(self, new_node: Node):
         self.extend_nodes(new_node, self.orig_trace)
+        if (len(new_node.edges_in_frequency_order) == 0):
+            return
+
         self.worklist.append(new_node)
 
     def assign_and_extend(self, new_label_info : LabelInfo, orig_label_info : LabelInfo):
@@ -274,22 +288,28 @@ class Problem:
         return p_pos - p_pos_start
 
     def extend_nodes(self, node : Node, trace : Trace):
-        if len(node.edges_in_frequency_order) > 0 or len(node.places) == 0:
+        if len(node.edges_in_frequency_order) > 0:
             return
+
+        #print(f"before: {len(node.edges_in_frequency_order)}, {len(node.edges)}")
 
         for i in range(len(node.places)):
             index = node.places[i]
             if index < len(trace):
                 label_info = trace[index]
-                slot = node.edges[label_info]
-                if slot is None:
+                if label_info not in node.edges:
                     slot = Node(label_info, node)
                     # all_nodes_.push_back(slot)
                     node.edges_in_frequency_order.append(slot)
-
+                    node.edges[label_info] = slot
+                else:
+                    slot = node.edges[label_info]
 
                 slot.count += 1
                 slot.places.append(index + 1)
+        
+        #print(f"{len(node.edges_in_frequency_order)}, {len(node.edges)}")
+        node.edges_in_frequency_order.sort(key=lambda x: x.count, reverse=True)
 
 
 class AdjustmentAll:
@@ -313,12 +333,23 @@ class AdjustmentAll:
         prob = Problem(self.old_abs32, self.new_abs32)
         prob = Problem(self.old_rel32, self.new_rel32)
 
+    def _link_label_infos(self, trace: Trace):
+        trace_by_addr = sorted(trace, key=lambda x: x.label.rva)
+        prev : LabelInfo
+        prev = None
+        for x in trace_by_addr:
+            if prev:
+                x.prev_addr_labelinfo = prev
+                prev.next_addr_labelinfo = x
+            prev = x
 
     def _collect_traces(self, receptor: Receptor, abs32: Trace, rel32: Trace, is_model: bool):
         for x in receptor.abs32s:
             abs32.append(self.reference_label(abs32, is_model, x))
+        self._link_label_infos(abs32)
         for x in receptor.rel32s:
             rel32.append(self.reference_label(rel32, is_model, x))
+        self._link_label_infos(rel32)
 
     # make_label_info + reference_label
     #def make_label_infos(self, label, position):
@@ -331,6 +362,6 @@ class AdjustmentAll:
             slot.label = label
             slot.is_model = is_model
 
-        slot.positions_.append(label.rva)
+        slot.positions_.append(len(trace))
         slot.refs_cnt += 1
         return slot

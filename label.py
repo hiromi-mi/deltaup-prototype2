@@ -7,5 +7,5 @@ class Label:
     def __init__(self, rva: int, name : str = ""):
         self.rva = rva
         self.name = name
-        self.index = 0
+        self.index = -1
         pass
