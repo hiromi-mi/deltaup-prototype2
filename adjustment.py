@@ -344,10 +344,17 @@ class AdjustmentAll:
             prev = x
 
     def _collect_traces(self, receptor: Receptor, abs32: Trace, rel32: Trace, is_model: bool):
+        index = 0
         for x in receptor.abs32s:
+            if is_model:
+                x.index = index
+                index += 1
             abs32.append(self.reference_label(abs32, is_model, x))
         self._link_label_infos(abs32)
         for x in receptor.rel32s:
+            if is_model:
+                x.index = index
+                index += 1
             rel32.append(self.reference_label(rel32, is_model, x))
         self._link_label_infos(rel32)
 
