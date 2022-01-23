@@ -38,6 +38,7 @@ class Node:
         else:
             self.length = prev.length + 1
 
+        self.edges = {} # TODO
         self.edges_in_frequency_order = []
         pass
 

@@ -169,28 +169,33 @@ class Disassembler:
     def parse_file(self, f : io.BytesIO, receptor : Receptor):
 
         elffile = ELFFile(f)
+
         symtable = elffile.get_section_by_name('.symtab')
+
         self.program = f
         self.elfprogram = elffile
         self._getabs32(f)
 
-        file_offset = 0
-        abs_offsets = []
-        abs32_locations_ = []
+        #file_offset = 0
+        #abs_offsets = []
+        #abs32_locations_ = []
 
-        for sym in symtable.iter_symbols():
-            f.seek(sym['st_value'])
-            code = f.read(sym['st_size'])
+        if symtable is not None:
+            for sym in symtable.iter_symbols():
+                f.seek(sym['st_value'])
+                code = f.read(sym['st_size'])
 
-            md = Cs(CS_ARCH_X86, CS_MODE_64)
-            # modr/m の部分など個別に取り出せるようにする
-            md.detail = True
-           # instrs = list(filter(lambda x: x.mnemonic in ["call", "jmp"], md.disasm(maincode, 0)))
-           #for i in md.disasm(maincode, 0):
-           #    print("0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
+                md = Cs(CS_ARCH_X86, CS_MODE_64)
+                # modr/m の部分など個別に取り出せるようにする
+                md.detail = True
+            # instrs = list(filter(lambda x: x.mnemonic in ["call", "jmp"], md.disasm(maincode, 0)))
+            #for i in md.disasm(maincode, 0):
+            #    print("0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
 
-            # instrs_all.append(instrs)
-            # rvvs_to_file_offsets
+                # instrs_all.append(instrs)
+                # rvvs_to_file_offsets
+
+        # TODO codes
         for section in elffile.iter_sections():
             header = section.header.sh_type
             # 各セクションヘッダを見つつ

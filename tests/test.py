@@ -1,3 +1,4 @@
+from dis import dis
 import os
 import sys
 sys.path.append("..")
@@ -24,7 +25,10 @@ def test():
     testrel32(d)
 
 def testadjustment():
-    problem = adjustment.Problem("../thirdparty/elf-32-1","../thirdparty/elf-32-2")
+    disasm1 = disassembler.Disassembler("../thirdparty/elf-32-1")
+    disasm2 = disassembler.Disassembler("../thirdparty/elf-32-2")
+    problem = adjustment.AdjustmentAll(disasm1, disasm2)
+    # problem = adjustment.Problem("../thirdparty/elf-32-1","../thirdparty/elf-32-2")
 
     pass
 
