@@ -8,18 +8,18 @@ from label import Label
 
 class LabelInfo:
     assignment: 'LabelInfo | None'
-    label: Optional[Label]
+    label: Label
     is_model : bool
     refs_cnt : int
-    next_addr_labelinfo : 'LabelInfo'
-    prev_addr_labelinfo : 'LabelInfo'
+    next_addr_labelinfo : 'LabelInfo | None'
+    prev_addr_labelinfo : 'LabelInfo | None'
     # rva: int
     # rva is already included in label
 
     positions_ : List[int]
-    def __init__(self):
+    def __init__(self, label: Label):
         self.positions_ = []
-        self.label = None
+        self.label = label
         self.refs_cnt = 0
         self.assignment = None
         self.next_addr_labelinfo = None
@@ -50,7 +50,7 @@ class Node:
         pass
 
     def Weight(self) -> int:
-        return len(self.edges_in_frequency_order[0].count)
+        return len(self.edges_in_frequency_order[0].places)
 
 
 class Problem:
@@ -91,6 +91,7 @@ class Problem:
     def skip_committed_labels(self, node: Node):
         self.extend_nodes(node, self.new_trace)
 
+        assert node.edges_in_frequency_order[0].in_edge is not None
         while node.edges_in_frequency_order[0].in_edge.assignment:
             if len(node.edges_in_frequency_order) == 0:
                 break
@@ -101,6 +102,8 @@ class Problem:
         if len(new_node.edges_in_frequency_order) == 0:
             print(f"Error {new_node.__dict__}")
         front = new_node.edges_in_frequency_order[-1]
+
+        assert front.in_edge is not None
         if front.in_edge.assignment:
             # delete front
             new_node.edges_in_frequency_order.pop()
@@ -129,6 +132,8 @@ class Problem:
         orig_node.edges_in_frequency_order.pop()
         new_node.edges_in_frequency_order.pop()
 
+        assert new_match.in_edge is not None
+        assert orig_match.in_edge is not None
         new_label_info = new_match.in_edge
         orig_label_info = orig_match.in_edge
         m_index = new_label_info.label.index
@@ -173,17 +178,22 @@ class Problem:
 
         self.extend_nodes(orig_parent, self.orig_trace)
 
+        assert node.in_edge is not None
         new_label_info = node.in_edge
+
         orig_label_info = new_label_info.assignment
 
 # TODO
-        return orig_parent.edges[orig_parent.edges[orig_label_info]]
+        assert orig_label_info is not None
+        return orig_parent.edges[orig_label_info]
 
-    def _extend_assignment_forward(self, new_info_next: LabelInfo, old_info_next: LabelInfo, new_rva_base: int, old_rva_base: int):
+    def _extend_assignment_forward(self, new_info_next: Optional[LabelInfo], old_info_next: Optional[LabelInfo], new_rva_base: int, old_rva_base: int):
         while (new_info_next and old_info_next):
             if old_info_next.assignment:
                 break
 
+            assert old_info_next.next_addr_labelinfo is not None
+            assert new_info_next.next_addr_labelinfo is not None
             # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
             old_rva = old_info_next.next_addr_labelinfo.label.rva
             new_rva = new_info_next.next_addr_labelinfo.label.rva
@@ -203,11 +213,13 @@ class Problem:
             new_info_next = new_info_next_next
             old_info_next = old_info_next_next
 
-    def _extend_assignment_backward(self, new_info_prev: LabelInfo, old_info_prev: LabelInfo, new_rva_base: int, old_rva_base: int):
+    def _extend_assignment_backward(self, new_info_prev: Optional[LabelInfo], old_info_prev: Optional[LabelInfo], new_rva_base: int, old_rva_base: int):
         while (new_info_prev and old_info_prev):
             if old_info_prev.assignment:
                 break
 
+            assert old_info_prev.prev_addr_labelinfo is not None
+            assert new_info_prev.prev_addr_labelinfo is not None
             # 最初の old_rva_base と new_info_next を (2,3,...) 続けている
             old_rva = old_info_prev.prev_addr_labelinfo.label.rva
             new_rva = new_info_prev.prev_addr_labelinfo.label.rva
@@ -335,7 +347,7 @@ class AdjustmentAll:
 
     def _link_label_infos(self, trace: Trace):
         trace_by_addr = sorted(trace, key=lambda x: x.label.rva)
-        prev : LabelInfo
+        prev : Optional[LabelInfo]
         prev = None
         for x in trace_by_addr:
             if prev:
@@ -364,10 +376,8 @@ class AdjustmentAll:
         if label in self.label_infos:
             slot = self.label_infos[label]
         else:
-            slot = LabelInfo()
+            slot = LabelInfo(label)
             self.label_infos[label] = slot
-        if not slot.label:
-            slot.label = label
             slot.is_model = is_model
 
         slot.positions_.append(len(trace))

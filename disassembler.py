@@ -150,7 +150,7 @@ class Disassembler:
 
         #return receptor
 
-    def _getabs32(self, f : io.BytesIO):
+    def _getabs32(self, f : BinaryIO):
         for section in self.elfprogram.iter_sections():
             section_header = section.header
             start_offset = section_header.sh_offset
@@ -167,7 +167,7 @@ class Disassembler:
                 self.receptor.emit_abs32(Label(rva))
 
 
-    def parse_file(self, f : io.BytesIO, receptor : Receptor):
+    def parse_file(self, f : BinaryIO, receptor : Receptor):
 
         elffile = ELFFile(f)
 
