@@ -365,6 +365,7 @@ class AdjustmentAll:
             slot = self.label_infos[label]
         else:
             slot = LabelInfo()
+            self.label_infos[label] = slot
         if not slot.label:
             slot.label = label
             slot.is_model = is_model

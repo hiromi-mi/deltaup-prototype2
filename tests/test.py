@@ -28,6 +28,9 @@ def testadjustment():
     disasm1 = disassembler.Disassembler("../thirdparty/elf-32-1")
     disasm2 = disassembler.Disassembler("../thirdparty/elf-32-2")
     problem = adjustment.AdjustmentAll(disasm1.receptor, disasm2.receptor)
+    for x in problem.label_infos.values():
+        print(x.__dict__)
+        #print(y.__dict__)
     # problem = adjustment.Problem("../thirdparty/elf-32-1","../thirdparty/elf-32-2")
 
     pass

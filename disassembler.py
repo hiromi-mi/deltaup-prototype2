@@ -96,6 +96,7 @@ class Disassembler:
         self.parse_file(f, receptor)
         f.close()
 
+    # unused
     def is_valid_target_rva(self, rva : int) -> bool:
         if rva == "unassigned":
             return False
