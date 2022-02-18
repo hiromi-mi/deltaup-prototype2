@@ -1,6 +1,6 @@
 from os import close
 from elftools.elf.elffile import ELFFile
-from capstone import *
+import capstone
 from typing import *
 import io
 
@@ -118,6 +118,9 @@ class Disassembler:
                     return section_header.sh_addr + offset - section_begin
 
 
+        # 到達しない
+        # unreachable
+
     def rva_to_file_offset(self, rva: int):
         # rva と file offset を見てなおす
         with open(self.fname) as f:
@@ -148,7 +151,7 @@ class Disassembler:
         pass
 
 
-        #return receptor
+        #return receptor    
 
     def _getabs32(self, f : BinaryIO):
         for section in self.elfprogram.iter_sections():
@@ -186,7 +189,7 @@ class Disassembler:
                 f.seek(sym['st_value'])
                 code = f.read(sym['st_size'])
 
-                md = Cs(CS_ARCH_X86, CS_MODE_64)
+                md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
                 # modr/m の部分など個別に取り出せるようにする
                 md.detail = True
             # instrs = list(filter(lambda x: x.mnemonic in ["call", "jmp"], md.disasm(maincode, 0)))
